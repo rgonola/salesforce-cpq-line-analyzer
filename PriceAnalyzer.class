@@ -1,0 +1,95 @@
+/*
+ * Copyright (c) 2018 Matthew Seeger <mseeger@salesforce.com>
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+/**
+ * Controller for CPQ Price Analyzer Visualforce Page
+ * Parses URL parameters and can optionally fetch data for presentation in the Visualforce page
+ * @author Matthew Seeger <mseeger@salesforce.com>
+ */
+public class PriceAnalyzerController{
+    /**
+     * Salesforce ID of the Product2 record in scope
+     * Passed as URL parameter in Salesforce CPQ Custom Setting
+     */
+    public Id productId {get; set;}
+    
+    /**
+     * Product Object with additional data of the product in scope
+     */
+    public Product2 productObj {get; set;}
+
+    /**
+     * As an example, the Quantity quoted of the item in scope
+     * Passed as URL parameter in Salesforce CPQ Custom Setting
+     */
+    public Decimal param1 {get; set;}
+
+    /**
+     * As an example, the Sale Price quoted of the item in scope
+     * Passed as URL parameter in Salesforce CPQ Custom Setting
+     */
+    public Decimal param2 {get; set;}
+    
+    /**
+     * As an example, using Apex as the means of data retrival, 
+     * the MAX HIstorical Sale Price quoted of the item in scope
+     * Set in {@link PriceAnalyzerController#getPricePoints}
+     */
+    public Decimal high {get; set;}
+    
+    /**
+     * As an example, using Apex as the means of data retrival, 
+     * the AVERAGE HIstorical Sale Price quoted of the item in scope
+     * Set in {@link PriceAnalyzerController#getPricePoints}
+     */
+    public Decimal avg {get; set;}
+
+    /**
+     * As an example, using Apex as the means of data retrival, 
+     * the MIN HIstorical Sale Price quoted of the item in scope
+     * Set in {@link PriceAnalyzerController#getPricePoints}
+     */
+    public Decimal low {get; set;} 
+    
+    /**
+     * Constructor for the Visualforce page
+     * Simply parses data in URL and makes it available to the visualforce page
+     */
+    public PriceAnalyzerController(){
+        this.param1 = Decimal.valueOf(ApexPages.currentPage().getParameters().get('SBQQ__Quantity__c')); //This Parameter is defined the 
+        this.param2 = Decimal.valueOf(ApexPages.currentPage().getParameters().get('SBQQ__NetPrice__c'));
+        this.productId = ApexPages.currentPage().getParameters().get('SBQQ__Product_c');
+        this.productObj = [SELECT Name FROM Product2 WHERE Id = :this.productId];
+        getPricePoints();
+    }
+    
+    /**
+     * Fetches historical MAX, AVERAGE, and MIN Sales price of the item in scope.
+     * Privided as an example of how to surface data in the visualforce page using SOQL in Apex looking at CPQ Quote Line Records
+     */
+    private void getPricePoints(){
+        AggregateResult[] res = [SELECT AVG(SBQQ__NetPrice__c), MAX(SBQQ__NetPrice__c), MIN(SBQQ__NetPrice__c) FROM SBQQ__QuoteLine__c WHERE SBQQ__Product__c = :this.productId AND SBQQ__Quote__r.SBQQ__Primary__c = true AND SBQQ__Quote__r.SBQQ__Opportunity2__r.CloseDate <= TODAY and SBQQ__Quote__r.SBQQ__Opportunity2__r.IsWon = TRUE];
+        this.avg = (Decimal)res[0].get('expr0');
+        this.high = (Decimal)res[0].get('expr1');
+        this.low = (Decimal)res[0].get('expr2');
+    }
+}
