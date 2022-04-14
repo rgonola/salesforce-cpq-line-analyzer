@@ -4,3 +4,7 @@ Contexually vizualize historical pricing information while quoting
 
 ## Use
 This is a working example that can be easily modified to surface contexually relevent information while quoting.
+<a href="https://githubsfdeploy.herokuapp.com">
+  <img alt="Deploy to Salesforce"
+       src="https://raw.githubusercontent.com/afawcett/githubsfdeploy/master/deploy.png">
+</a>
